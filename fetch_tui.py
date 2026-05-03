@@ -3,7 +3,7 @@ import json
 from datetime import datetime
 
 # 🔑 HIER JOUW TUI FEED URL INVULLEN
-FEED_URL = "FEED_URL = "https://jouw-tui-feed-url.xml"
+FEED_URL = "https://jouw-echte-feed-url.xml"
 
 def fetch_feed():
     print("Fetching TUI feed...")
