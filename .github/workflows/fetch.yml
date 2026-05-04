@@ -32,7 +32,7 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions@github.com"
 
-          git add snapshot.json snapshot_ids.json snapshot_meta.json
+          git add snapshot.json snapshot_ids.json snapshot_meta.json changes_since_previous.json
 
           git commit -m "Update snapshot files" || echo "No changes"
           git push
