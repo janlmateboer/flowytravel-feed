@@ -27,10 +27,12 @@ jobs:
       - name: Run script
         run: python fetch_tui.py
 
-      - name: Commit snapshot
+      - name: Commit snapshot files
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions@github.com"
-          git add snapshot.json
-          git commit -m "Update snapshot" || echo "No changes"
+
+          git add snapshot.json snapshot_ids.json snapshot_meta.json
+
+          git commit -m "Update snapshot files" || echo "No changes"
           git push
