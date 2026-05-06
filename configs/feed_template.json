@@ -1,0 +1,17 @@
+{
+  "merchant": "example",
+  "enabled": false,
+  "snapshot": {
+    "latest": "snapshots/example/latest/snapshot.json",
+    "previous": "snapshots/example/previous/snapshot.json",
+    "meta": "snapshots/example/latest/snapshot_meta.json",
+    "ids": "snapshots/example/latest/snapshot_ids.json",
+    "delta": "snapshots/example/latest/delta_import.json"
+  },
+  "audits": {
+    "validation": "audits/example/validation_report.json",
+    "duplicates": "audits/example/duplicate_ids.json",
+    "missing_fields": "audits/example/missing_fields.json",
+    "price_changes": "audits/example/price_changes.json"
+  }
+}
