@@ -29,6 +29,10 @@ jobs:
         run: |
           python scripts/archive_snapshot.py
 
+      - name: Cleanup old archives
+        run: |
+          python scripts/cleanup_archives.py
+
       - name: Copy latest snapshot to previous
         run: |
           mkdir -p snapshots/tui/previous
