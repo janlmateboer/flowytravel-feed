@@ -25,6 +25,14 @@ jobs:
         run: |
           pip install requests
 
+      - name: Copy latest snapshot to previous
+        run: |
+          mkdir -p snapshots/tui/previous
+
+          cp snapshots/tui/latest/snapshot.json snapshots/tui/previous/snapshot.json || true
+          cp snapshots/tui/latest/snapshot_meta.json snapshots/tui/previous/snapshot_meta.json || true
+          cp snapshots/tui/latest/snapshot_ids.json snapshots/tui/previous/snapshot_ids.json || true
+
       - name: Fetch TUI snapshot
         env:
           TUI_FEED_URL: ${{ secrets.TUI_FEED_URL }}
@@ -50,9 +58,13 @@ jobs:
           git add snapshots/tui/latest/changes_since_previous.json
           git add snapshots/tui/latest/delta_import.json
 
+          git add snapshots/tui/previous/snapshot.json
+          git add snapshots/tui/previous/snapshot_meta.json
+          git add snapshots/tui/previous/snapshot_ids.json
+
           git add audits/validation_report.json
           git add audits/duplicate_ids.json
           git add audits/missing_fields.json
 
-          git commit -m "Update TUI snapshot, delta and audits" || echo "No changes to commit"
+          git commit -m "Update TUI snapshot, previous snapshot, delta and audits" || echo "No changes to commit"
           git push
