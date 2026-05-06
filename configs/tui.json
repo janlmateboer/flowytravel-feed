@@ -1,0 +1,13 @@
+{
+  "merchant": "tui",
+
+  "feed_url_secret": "TUI_FEED_URL",
+
+  "paths": {
+    "latest_snapshot": "snapshots/tui/latest/",
+    "previous_snapshot": "snapshots/tui/previous/",
+    "archive_snapshot": "snapshots/tui/archive/",
+    "audits": "audits/tui/",
+    "logs": "logs/tui/"
+  }
+}
