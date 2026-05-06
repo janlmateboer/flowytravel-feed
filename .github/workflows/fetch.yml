@@ -26,6 +26,8 @@ jobs:
           pip install requests
 
       - name: Fetch TUI snapshot
+        env:
+          TUI_FEED_URL: ${{ secrets.TUI_FEED_URL }}
         run: |
           python scripts/fetch_tui.py
 
