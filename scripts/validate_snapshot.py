@@ -5,7 +5,7 @@ from pathlib import Path
 
 SNAPSHOT_FILE = Path("snapshots/tui/latest/snapshot.json")
 
-AUDIT_DIR = Path("audits")
+AUDIT_DIR = Path("audits/tui")
 VALIDATION_REPORT_FILE = AUDIT_DIR / "validation_report.json"
 DUPLICATE_IDS_FILE = AUDIT_DIR / "duplicate_ids.json"
 MISSING_FIELDS_FILE = AUDIT_DIR / "missing_fields.json"
