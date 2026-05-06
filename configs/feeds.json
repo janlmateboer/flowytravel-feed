@@ -1,0 +1,12 @@
+{
+  "feeds": [
+    {
+      "merchant": "tui",
+      "enabled": true,
+      "snapshot_path": "snapshots/tui/latest/snapshot.json",
+      "delta_path": "snapshots/tui/latest/delta_import.json",
+      "audit_path": "audits/tui/validation_report.json",
+      "price_changes_path": "audits/tui/price_changes.json"
+    }
+  ]
+}
