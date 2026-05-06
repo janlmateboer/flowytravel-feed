@@ -25,6 +25,10 @@ jobs:
         run: |
           pip install requests
 
+      - name: Archive current latest snapshot
+        run: |
+          python scripts/archive_snapshot.py
+
       - name: Copy latest snapshot to previous
         run: |
           mkdir -p snapshots/tui/previous
@@ -51,7 +55,7 @@ jobs:
         run: |
           python scripts/generate_delta_import.py
 
-      - name: Commit snapshot, delta and audit files
+      - name: Commit snapshot, archive, delta and audit files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -66,10 +70,12 @@ jobs:
           git add snapshots/tui/previous/snapshot_meta.json
           git add snapshots/tui/previous/snapshot_ids.json
 
+          git add snapshots/tui/archive/
+
           git add audits/tui/validation_report.json
           git add audits/tui/duplicate_ids.json
           git add audits/tui/missing_fields.json
           git add audits/tui/price_changes.json
 
-          git commit -m "Update TUI snapshots, audits and delta import" || echo "No changes to commit"
+          git commit -m "Update TUI snapshots, archive, audits and delta import" || echo "No changes to commit"
           git push
