@@ -31,7 +31,11 @@ jobs:
         run: |
           python scripts/fetch_tui.py
 
-      - name: Commit snapshot files
+      - name: Validate TUI snapshot
+        run: |
+          python scripts/validate_snapshot.py
+
+      - name: Commit snapshot and audit files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -41,5 +45,9 @@ jobs:
           git add snapshots/tui/latest/snapshot_ids.json
           git add snapshots/tui/latest/changes_since_previous.json
 
-          git commit -m "Update TUI snapshot files" || echo "No changes to commit"
+          git add audits/validation_report.json
+          git add audits/duplicate_ids.json
+          git add audits/missing_fields.json
+
+          git commit -m "Update TUI snapshot and audits" || echo "No changes to commit"
           git push
