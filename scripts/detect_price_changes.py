@@ -5,8 +5,7 @@ from pathlib import Path
 
 PREVIOUS_SNAPSHOT = Path("snapshots/tui/previous/snapshot.json")
 LATEST_SNAPSHOT = Path("snapshots/tui/latest/snapshot.json")
-PRICE_CHANGES_FILE = Path("audits/price_changes.json")
-
+PRICE_CHANGES_FILE = Path("audits/tui/price_changes.json")
 
 PRICE_FIELDS = [
     "price",
