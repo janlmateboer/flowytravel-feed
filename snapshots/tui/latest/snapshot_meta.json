@@ -1,13 +1,5 @@
 {
-  "merchant": "tui",
-  "fetched_at": "2026-05-06T22:30:31.181858+00:00",
-  "status": "success",
-  "raw_item_count": 6405,
-  "unique_external_id_count": 0,
-  "duplicate_external_id_count": 0,
-  "changes": {
-    "added_count": 0,
-    "removed_count": 0,
-    "unchanged_count": 0
-  }
+  "fetched_at": "2026-05-06T22:37:31.957154+00:00",
+  "item_count": 0,
+  "feed_hash": "e491afe270e903ae4fcde25a7fef1964"
 }
