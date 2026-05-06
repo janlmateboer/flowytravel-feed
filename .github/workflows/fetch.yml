@@ -25,48 +25,13 @@ jobs:
         run: |
           pip install requests
 
-      - name: Archive current latest snapshot
-        run: |
-          python scripts/archive_snapshot.py
-
-      - name: Cleanup old archives
-        run: |
-          python scripts/cleanup_archives.py
-
-      - name: Copy latest snapshot to previous
-        run: |
-          mkdir -p snapshots/tui/previous
-          cp snapshots/tui/latest/snapshot.json snapshots/tui/previous/snapshot.json || true
-          cp snapshots/tui/latest/snapshot_meta.json snapshots/tui/previous/snapshot_meta.json || true
-          cp snapshots/tui/latest/snapshot_ids.json snapshots/tui/previous/snapshot_ids.json || true
-
-      - name: Fetch TUI snapshot
+      - name: Run TUI pipeline
         env:
           TUI_FEED_URL: ${{ secrets.TUI_FEED_URL }}
         run: |
-          python scripts/fetch_tui.py
+          python scripts/run_pipeline.py tui
 
-      - name: Validate TUI snapshot
-        run: |
-          python scripts/validate_snapshot.py
-
-      - name: Detect price changes
-        run: |
-          python scripts/detect_price_changes.py
-
-      - name: Generate delta import
-        run: |
-          python scripts/generate_delta_import.py
-
-      - name: Build delta records
-        run: |
-          python scripts/build_delta_records.py
-
-      - name: Create run log
-        run: |
-          python scripts/create_run_log.py
-
-      - name: Commit snapshot, archive, audits, delta and logs
+      - name: Commit pipeline data
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
