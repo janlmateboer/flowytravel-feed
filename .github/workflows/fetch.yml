@@ -35,7 +35,11 @@ jobs:
         run: |
           python scripts/validate_snapshot.py
 
-      - name: Commit snapshot and audit files
+      - name: Generate delta import
+        run: |
+          python scripts/generate_delta_import.py
+
+      - name: Commit snapshot, delta and audit files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -44,10 +48,11 @@ jobs:
           git add snapshots/tui/latest/snapshot_meta.json
           git add snapshots/tui/latest/snapshot_ids.json
           git add snapshots/tui/latest/changes_since_previous.json
+          git add snapshots/tui/latest/delta_import.json
 
           git add audits/validation_report.json
           git add audits/duplicate_ids.json
           git add audits/missing_fields.json
 
-          git commit -m "Update TUI snapshot and audits" || echo "No changes to commit"
+          git commit -m "Update TUI snapshot, delta and audits" || echo "No changes to commit"
           git push
