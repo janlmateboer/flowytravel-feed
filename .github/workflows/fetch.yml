@@ -58,6 +58,10 @@ jobs:
         run: |
           python scripts/generate_delta_import.py
 
+      - name: Build delta records
+        run: |
+          python scripts/build_delta_records.py
+
       - name: Create run log
         run: |
           python scripts/create_run_log.py
