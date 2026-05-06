@@ -1,0 +1,16 @@
+{
+  "generated_at": "2026-05-06T21:54:19.660124+00:00",
+  "merchant": "tui",
+  "status": "success",
+  "item_count": 6405,
+  "external_id_count": 0,
+  "unique_external_id_count": 0,
+  "duplicate_external_id_count": 0,
+  "duplicate_group_count": 0,
+  "missing_fields_count": 6405,
+  "required_fields": [
+    "external_id",
+    "name",
+    "url"
+  ]
+}
