@@ -1,153 +1,156 @@
-import requests
-import json
-import xml.etree.ElementTree as ET
-from datetime import datetime
 import os
+import json
+import requests
+from datetime import datetime, timezone
+from pathlib import Path
+import xml.etree.ElementTree as ET
 
-FEED_URL = "https://pf.tradetracker.net/?aid=172268&encoding=utf-8&type=xml-v2&fid=1564650&filter_html=1&categoryType=2&additionalType=2"
+FEED_URL = os.environ.get("TUI_FEED_URL")
+
+BASE_DIR = Path("snapshots/tui/latest")
+SNAPSHOT_FILE = BASE_DIR / "snapshot.json"
+META_FILE = BASE_DIR / "snapshot_meta.json"
+IDS_FILE = BASE_DIR / "snapshot_ids.json"
+CHANGES_FILE = BASE_DIR / "changes_since_previous.json"
+
+
+def ensure_dirs():
+    BASE_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def fetch_feed():
-    print("Fetching TUI feed...")
+    if not FEED_URL:
+        raise Exception("TUI_FEED_URL is missing. Add it as a GitHub Secret.")
+
     response = requests.get(FEED_URL, timeout=60)
 
     if response.status_code != 200:
-        raise Exception(f"Feed error: {response.status_code}")
+        raise Exception(f"TUI feed error: HTTP {response.status_code}")
 
-    print(f"✅ Feed fetched: {len(response.text)} chars")
     return response.text
 
 
-def get_text(product, tag):
-    el = product.find(tag)
-    return el.text.strip() if el is not None and el.text else None
-
-
-def get_prop(product, prop_name):
-    for prop in product.findall(".//property"):
-        if prop.get("name") == prop_name:
-            val = prop.find("value")
-            return val.text.strip() if val is not None and val.text else None
-    return None
-
-
-def extract_items(xml_data):
-    print("Parsing XML...")
+def parse_xml_items(xml_data):
     root = ET.fromstring(xml_data)
-
     items = []
 
     for product in root.findall(".//product"):
-        raw_id = product.get("ID") or product.get("id")
-        external_id = f"tui-{raw_id}".lower().strip() if raw_id else None
+        item = {}
 
-        price_el = product.find("price")
-        price = price_el.text.strip() if price_el is not None and price_el.text else None
+        for child in product:
+            key = child.tag
+            value = child.text.strip() if child.text else None
+            item[key] = value
 
-        image_url = None
-        image_el = product.find(".//images/image")
-        if image_el is not None and image_el.text:
-            image_url = image_el.text.strip()
-
-        category_el = product.find(".//category")
-        travel_type = None
-        if category_el is not None:
-            travel_type = (category_el.get("path") or category_el.text or "").strip().lower()
-
-        item = {
-            "external_id": external_id,
-            "title": get_text(product, "name") or get_text(product, "Name"),
-            "price": price,
-            "affiliate_url": get_text(product, "URL") or get_text(product, "productURL"),
-            "image_url": image_url,
-            "travel_type": travel_type,
-            "country": get_prop(product, "country"),
-            "city": get_prop(product, "city"),
-            "region": get_prop(product, "region"),
-            "accommodation_type": get_prop(product, "accommodationType"),
-            "duration": get_prop(product, "duration"),
-            "departure_date": get_prop(product, "departureDate"),
-            "rating": get_prop(product, "rating"),
-        }
+        external_id = (
+            item.get("external_id")
+            or item.get("id")
+            or item.get("product_id")
+            or item.get("program_id")
+        )
 
         if external_id:
-            items.append(item)
+            item["external_id"] = f"tui-{external_id}"
 
-    print(f"✅ {len(items)} items parsed")
-
-    if len(items) == 0:
-        raise Exception("ABORT: 0 items parsed — refusing to overwrite snapshot with empty data")
+        items.append(item)
 
     return items
 
 
-def create_changes_file(items):
-    new_ids = set([item["external_id"] for item in items if item.get("external_id")])
-    old_ids = set()
+def load_previous_ids():
+    if not IDS_FILE.exists():
+        return []
 
-    if os.path.exists("snapshot_ids.json"):
-        try:
-            with open("snapshot_ids.json", "r", encoding="utf-8") as f:
-                old_ids = set(json.load(f))
-        except Exception:
-            old_ids = set()
+    try:
+        with open(IDS_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            return data.get("ids", [])
+    except Exception:
+        return []
 
-    added = sorted(list(new_ids - old_ids))
-    removed = sorted(list(old_ids - new_ids))
 
-    changes = {
-        "generated_at": datetime.utcnow().isoformat(),
-        "added_ids": added,
-        "removed_ids": removed,
+def calculate_changes(current_ids, previous_ids):
+    current_set = set(current_ids)
+    previous_set = set(previous_ids)
+
+    added = sorted(list(current_set - previous_set))
+    removed = sorted(list(previous_set - current_set))
+    unchanged = sorted(list(current_set & previous_set))
+
+    return {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
         "added_count": len(added),
         "removed_count": len(removed),
-        "unchanged_count": len(new_ids & old_ids)
+        "unchanged_count": len(unchanged),
+        "added_ids": added,
+        "removed_ids": removed
     }
 
-    with open("changes_since_previous.json", "w", encoding="utf-8") as f:
-        json.dump(changes, f, ensure_ascii=False, indent=2)
 
-    print(f"✅ changes opgeslagen: +{len(added)} / -{len(removed)}")
-
-
-def create_files(items):
-    now = datetime.utcnow().isoformat()
-
-    snapshot = {
-        "fetched_at": now,
-        "total_items": len(items),
-        "items": items
-    }
-
-    snapshot_ids = [item["external_id"] for item in items if item.get("external_id")]
-
-    meta = {
-        "generated_at": now,
-        "fetched_at": now,
-        "total_items": len(items),
-        "total_external_ids": len(snapshot_ids),
-        "merchant": "tui",
-        "source": "tradetracker"
-    }
-
-    with open("snapshot.json", "w", encoding="utf-8") as f:
-        json.dump(snapshot, f, ensure_ascii=False, indent=2)
-
-    with open("snapshot_ids.json", "w", encoding="utf-8") as f:
-        json.dump(snapshot_ids, f, ensure_ascii=False, indent=2)
-
-    with open("snapshot_meta.json", "w", encoding="utf-8") as f:
-        json.dump(meta, f, ensure_ascii=False, indent=2)
-
-    print(f"✅ snapshot bestanden opgeslagen met {len(items)} items")
+def save_json(path, data):
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
 
 
 def main():
-    xml = fetch_feed()
-    items = extract_items(xml)
+    ensure_dirs()
 
-    create_changes_file(items)
-    create_files(items)
+    fetched_at = datetime.now(timezone.utc).isoformat()
+
+    print("Fetching TUI feed...")
+    xml_data = fetch_feed()
+
+    print("Parsing XML...")
+    items = parse_xml_items(xml_data)
+
+    current_ids = [
+        item["external_id"]
+        for item in items
+        if item.get("external_id")
+    ]
+
+    previous_ids = load_previous_ids()
+    changes = calculate_changes(current_ids, previous_ids)
+
+    snapshot = {
+        "merchant": "tui",
+        "fetched_at": fetched_at,
+        "item_count": len(items),
+        "items": items
+    }
+
+    meta = {
+        "merchant": "tui",
+        "fetched_at": fetched_at,
+        "status": "success",
+        "raw_item_count": len(items),
+        "unique_external_id_count": len(set(current_ids)),
+        "duplicate_external_id_count": len(current_ids) - len(set(current_ids)),
+        "changes": {
+            "added_count": changes["added_count"],
+            "removed_count": changes["removed_count"],
+            "unchanged_count": changes["unchanged_count"]
+        }
+    }
+
+    ids = {
+        "merchant": "tui",
+        "generated_at": fetched_at,
+        "count": len(current_ids),
+        "ids": sorted(current_ids)
+    }
+
+    print("Saving snapshot files...")
+    save_json(SNAPSHOT_FILE, snapshot)
+    save_json(META_FILE, meta)
+    save_json(IDS_FILE, ids)
+    save_json(CHANGES_FILE, changes)
+
+    print("Done.")
+    print(f"Items: {len(items)}")
+    print(f"IDs: {len(current_ids)}")
+    print(f"Added: {changes['added_count']}")
+    print(f"Removed: {changes['removed_count']}")
 
 
 if __name__ == "__main__":
