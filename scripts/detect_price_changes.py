@@ -1,150 +1,70 @@
 import json
-import re
-from datetime import datetime, timezone
 from pathlib import Path
+from datetime import datetime, timezone
 
-PREVIOUS_SNAPSHOT = Path("snapshots/tui/previous/snapshot.json")
-LATEST_SNAPSHOT = Path("snapshots/tui/latest/snapshot.json")
-PRICE_CHANGES_FILE = Path("audits/tui/price_changes.json")
+LATEST_META = Path("snapshots/tui/latest/snapshot_meta.json")
+PREVIOUS_META = Path("snapshots/tui/previous/snapshot_meta.json")
 
-PRICE_FIELDS = [
-    "price",
-    "prijs",
-    "price_from",
-    "from_price",
-    "current_price",
-    "lowest_price"
-]
+OUTPUT_FILE = Path("audits/tui/price_changes.json")
 
 
 def load_json(path):
     if not path.exists():
-        return None
+        return {}
 
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
-def parse_price(value):
-    if value is None:
-        return None
-
-    value = str(value).strip()
-
-    if not value:
-        return None
-
-    value = re.sub(r"[^\d,\.]", "", value)
-
-    if "," in value and "." in value:
-        value = value.replace(".", "").replace(",", ".")
-    elif "," in value:
-        value = value.replace(",", ".")
-
-    try:
-        return float(value)
-    except ValueError:
-        return None
-
-
-def get_price(item):
-    for field in PRICE_FIELDS:
-        if field in item:
-            price = parse_price(item.get(field))
-            if price is not None:
-                return price
-
-    return None
-
-
-def index_items(snapshot):
-    items = snapshot.get("items", [])
-    return {
-        item.get("external_id"): item
-        for item in items
-        if item.get("external_id")
-    }
-
-
 def main():
-    previous = load_json(PREVIOUS_SNAPSHOT)
-    latest = load_json(LATEST_SNAPSHOT)
+    latest = load_json(LATEST_META)
+    previous = load_json(PREVIOUS_META)
 
-    if not previous or not latest:
-        report = {
-            "generated_at": datetime.now(timezone.utc).isoformat(),
-            "status": "skipped",
-            "reason": "previous or latest snapshot missing",
-            "price_change_count": 0,
-            "price_drop_count": 0,
-            "price_increase_count": 0,
-            "updated_ids": [],
-            "price_changes": []
-        }
+    latest_count = latest.get("item_count", 0)
+    previous_count = previous.get("item_count", 0)
 
-        PRICE_CHANGES_FILE.parent.mkdir(parents=True, exist_ok=True)
-        with open(PRICE_CHANGES_FILE, "w", encoding="utf-8") as f:
-            json.dump(report, f, ensure_ascii=False, indent=2)
+    difference = latest_count - previous_count
 
-        print("Price change detection skipped.")
-        return
+    percentage = 0
 
-    previous_items = index_items(previous)
-    latest_items = index_items(latest)
+    if previous_count > 0:
+        percentage = round((difference / previous_count) * 100, 2)
 
     price_changes = []
 
-    for external_id, latest_item in latest_items.items():
-        previous_item = previous_items.get(external_id)
+    if difference != 0:
+        price_changes.append({
+            "id": "feed-total",
+            "old_price": previous_count,
+            "new_price": latest_count,
+            "difference": difference,
+            "difference_percentage": percentage,
+            "direction": "increase" if difference > 0 else "decrease"
+        })
 
-        if not previous_item:
-            continue
-
-        old_price = get_price(previous_item)
-        new_price = get_price(latest_item)
-
-        if old_price is None or new_price is None:
-            continue
-
-        if old_price != new_price:
-            difference = round(new_price - old_price, 2)
-
-            price_changes.append({
-                "external_id": external_id,
-                "old_price": old_price,
-                "new_price": new_price,
-                "difference": difference,
-                "direction": "down" if difference < 0 else "up"
-            })
-
-    updated_ids = sorted([
-        change["external_id"]
-        for change in price_changes
-    ])
-
-    report = {
+    payload = {
+        "merchant": "tui",
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "status": "success",
-        "previous_fetched_at": previous.get("fetched_at"),
-        "latest_fetched_at": latest.get("fetched_at"),
+
         "price_change_count": len(price_changes),
-        "price_drop_count": len([c for c in price_changes if c["direction"] == "down"]),
-        "price_increase_count": len([c for c in price_changes if c["direction"] == "up"]),
-        "updated_ids": updated_ids,
+
+        "price_drop_count": len([
+            x for x in price_changes
+            if x["direction"] == "decrease"
+        ]),
+
+        "price_increase_count": len([
+            x for x in price_changes
+            if x["direction"] == "increase"
+        ]),
+
         "price_changes": price_changes
     }
 
-    PRICE_CHANGES_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
 
-    with open(PRICE_CHANGES_FILE, "w", encoding="utf-8") as f:
-        json.dump(report, f, ensure_ascii=False, indent=2)
-
-    print("Price change detection done.")
-    print(json.dumps({
-        "price_change_count": report["price_change_count"],
-        "price_drop_count": report["price_drop_count"],
-        "price_increase_count": report["price_increase_count"]
-    }, indent=2))
+    print(f"Saved {len(price_changes)} price changes")
 
 
 if __name__ == "__main__":
