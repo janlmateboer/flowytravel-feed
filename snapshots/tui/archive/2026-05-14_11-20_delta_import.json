@@ -1,0 +1,13 @@
+{
+  "merchant": "tui",
+  "generated_at": "2026-05-13T11:37:32.678671+00:00",
+  "mode": "delta",
+  "added_count": 0,
+  "removed_count": 0,
+  "updated_count": 0,
+  "added_ids": [],
+  "removed_ids": [],
+  "updated_ids": [],
+  "should_import_full_snapshot": false,
+  "note": "updated_ids not implemented yet; this file currently supports added and removed IDs only."
+}
