@@ -1,0 +1,23 @@
+{
+  "generated_at": "2026-05-15T11:30:35.268698+00:00",
+  "feed": "tui",
+  "status": "success",
+  "snapshot": {
+    "item_count": 0,
+    "fetched_at": "2026-05-15T11:30:34.735553+00:00"
+  },
+  "delta": {
+    "added_count": 0,
+    "removed_count": 0,
+    "updated_count": 0
+  },
+  "prices": {
+    "price_change_count": 0,
+    "price_drop_count": 0,
+    "price_increase_count": 0
+  },
+  "validation": {
+    "duplicate_group_count": 0,
+    "missing_fields_count": 0
+  }
+}
